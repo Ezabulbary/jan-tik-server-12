@@ -1,7 +1,7 @@
 const express = require('express')
 const cors = require('cors');
 const app = express()
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config()
 const port = process.env.PORT || 5000;
 
@@ -17,6 +17,7 @@ async function run() {
         await client.connect();
         const toolsCollection = client.db('jan-tik').collection('tools');
         const reviewsCollection = client.db('jan-tik').collection('reviews');
+        const orderCollection = client.db('jan-tik').collection('orders');
 
         console.log('db connected');
 
@@ -26,10 +27,38 @@ async function run() {
             res.send(tools);
         });
 
+        app.get('/tools/:id', async (req, res) => {
+            const id = req.params.id;
+            const tool = await toolsCollection.findOne({ _id: ObjectId(id) });
+            res.send(tool);
+        });
+
+        app.put('/tools/:id', async (req, res) => {
+            const id = req.params.id;
+            const updateTool = req.body;
+            const filter = { _id: ObjectId(id) };
+            const options = { upset: true };
+            const updateDoc = {
+                $set: {
+                    available_quantity: updateTool.newQuantity
+                }
+            };
+            const result = await toolsCollection.updateOne(filter, updateDoc, options);
+            const item = await toolsCollection.findOne(filter);
+            res.send({ result, item });
+        });
+
         // reviews
         app.get('/reviews', async (req, res) => {
             const reviews = await reviewsCollection.find().toArray();
             res.send(reviews);
+        });
+
+        // orders
+        app.post('/orders', async (req, res) => {
+            const order = req.body;
+            const result = await orderCollection.insertOne(order);
+            res.send(result);
         });
 
     } finally {
