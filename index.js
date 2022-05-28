@@ -16,12 +16,20 @@ async function run() {
     try {
         await client.connect();
         const toolsCollection = client.db('jan-tik').collection('tools');
+        const reviewsCollection = client.db('jan-tik').collection('reviews');
 
         console.log('db connected');
 
+        // tools
         app.get('/tools', async (req, res) => {
             const tools = await toolsCollection.find().toArray();
             res.send(tools);
+        });
+
+        // reviews
+        app.get('/reviews', async (req, res) => {
+            const reviews = await reviewsCollection.find().toArray();
+            res.send(reviews);
         });
 
     } finally {
