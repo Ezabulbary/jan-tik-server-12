@@ -18,7 +18,7 @@ function verifyJWT(req, res, next) {
     const token = authHeader.split(' ')[1];
     jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, function (err, decoded) {
         if (err) {
-            return res.status(403).send({ message: 'Forbidden access' })
+            return res.status(403).send({ message: 'Forbidden access' });
         }
         req.decoded = decoded;
         next();
@@ -36,6 +36,7 @@ async function run() {
         const reviewsCollection = client.db('jan-tik').collection('reviews');
         const orderCollection = client.db('jan-tik').collection('orders');
         const userCollection = client.db('jan-tik').collection('user');
+        const profileCollection = client.db('jan-tik').collection('profile');
 
         console.log('db connected');
 
@@ -43,10 +44,10 @@ async function run() {
             const requester = req.decoded.email;
             const requesterAccount = await userCollection.findOne({ email: requester });
             if (requesterAccount.role === 'admin') {
-                next()
+                next();
             }
             else {
-                return res.status(403).send({ message: 'Forbidden access' })
+                return res.status(403).send({ message: 'Forbidden access' });
             }
         };
 
@@ -60,9 +61,9 @@ async function run() {
                 $set: user,
             };
             const result = await userCollection.updateOne(filter, updateDoc, options);
-            const token = jwt.sign({ email: email }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1d' })
+            const token = jwt.sign({ email: email }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1d' });
             res.send({ result, token });
-        })
+        });
 
         // tools
         app.get('/tools', async (req, res) => {
@@ -97,17 +98,49 @@ async function run() {
             res.send(reviews);
         });
 
-        // orders
-        app.post('/orders', async (req, res) => {
-            const order = req.body
-            const result = await orderCollection.insertOne(order)
-            res.send(result)
+        app.post('/addreview', async (req, res) => {
+            const newReview = req.body;
+            const result = await reviewsCollection.insertOne(newReview);
+            res.send(result);
         });
 
-        app.get('/orders', async (req, res) => {
+        // orders
+        app.post('/orders', async (req, res) => {
+            const order = req.body;
+            const result = await orderCollection.insertOne(order);
+            res.send(result);
+        });
+
+        app.get('/orders', verifyJWT, async (req, res) => {
             const email = req.query.customerEmail;
-            const query = { customerEmail: email };
-            const result = await orderCollection.find(query).toArray();
+            const decodedEmail = req.decoded.email;
+            if (email === decodedEmail){
+                const query = { customerEmail: email };
+                const result = await orderCollection.find(query).toArray();
+                res.send(result);
+            }
+            else {
+                return res.status(403).send({ message: 'forbidden access' });
+            }
+        });
+
+        app.delete('/orders/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: ObjectId(id) };
+            const result = await orderCollection.deleteOne(query);
+            res.send(result);
+        });
+
+        // profile
+        app.put('/myprofile/:email', async (req, res) => {
+            const email = req.params.email;
+            const info = req.body;
+            const filter = { email: email };
+            const options = { upsert: true };
+            const updateDoc = {
+                $set: info,
+            };
+            const result = await profileCollection.updateOne(filter, updateDoc, options);
             res.send(result);
         });
 
