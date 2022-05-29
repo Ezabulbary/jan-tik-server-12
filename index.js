@@ -94,88 +94,94 @@ async function run() {
             res.send({ admin: isAdmin })
         })
 
-    // tools
-    app.get('/tools', async (req, res) => {
-        const tools = await toolsCollection.find().toArray();
-        res.send(tools);
-    });
+        // tools
+        app.get('/tools', async (req, res) => {
+            const tools = await toolsCollection.find().toArray();
+            res.send(tools);
+        });
 
-    app.get('/tools/:id', async (req, res) => {
-        const id = req.params.id;
-        const tool = await toolsCollection.findOne({ _id: ObjectId(id) });
-        res.send(tool);
-    });
+        app.get('/tools/:id', async (req, res) => {
+            const id = req.params.id;
+            const tool = await toolsCollection.findOne({ _id: ObjectId(id) });
+            res.send(tool);
+        });
 
-    app.put('/tools/:id', async (req, res) => {
-        const id = req.params.id;
-        const updateTool = req.body;
-        const filter = { _id: ObjectId(id) };
-        const options = { upset: true };
-        const updateDoc = {
-            $set: {
-                available_quantity: updateTool.newQuantity
-            }
-        };
-        const result = await toolsCollection.updateOne(filter, updateDoc, options);
-        const item = await toolsCollection.findOne(filter);
-        res.send({ result, item });
-    });
+        app.put('/tools/:id', async (req, res) => {
+            const id = req.params.id;
+            const updateTool = req.body;
+            const filter = { _id: ObjectId(id) };
+            const options = { upset: true };
+            const updateDoc = {
+                $set: {
+                    available_quantity: updateTool.newQuantity
+                }
+            };
+            const result = await toolsCollection.updateOne(filter, updateDoc, options);
+            const item = await toolsCollection.findOne(filter);
+            res.send({ result, item });
+        });
 
-    // reviews
-    app.get('/reviews', async (req, res) => {
-        const reviews = await reviewsCollection.find().toArray();
-        res.send(reviews);
-    });
-
-    app.post('/addreview', async (req, res) => {
-        const newReview = req.body;
-        const result = await reviewsCollection.insertOne(newReview);
-        res.send(result);
-    });
-
-    // orders
-    app.post('/orders', async (req, res) => {
-        const order = req.body;
-        const result = await orderCollection.insertOne(order);
-        res.send(result);
-    });
-
-    app.get('/orders', verifyJWT, async (req, res) => {
-        const email = req.query.customerEmail;
-        const decodedEmail = req.decoded.email;
-        if (email === decodedEmail) {
-            const query = { customerEmail: email };
-            const result = await orderCollection.find(query).toArray();
+        app.post('/addProduct', verifyJWT, verifyAdmin, async (req, res) => {
+            const newTools = req.body;
+            const result = await toolsCollection.insertOne(newTools);
             res.send(result);
-        }
-        else {
-            return res.status(403).send({ message: 'forbidden access' });
-        }
-    });
+        })
 
-    app.delete('/orders/:id', async (req, res) => {
-        const id = req.params.id;
-        const query = { _id: ObjectId(id) };
-        const result = await orderCollection.deleteOne(query);
-        res.send(result);
-    });
+        // reviews
+        app.get('/reviews', async (req, res) => {
+            const reviews = await reviewsCollection.find().toArray();
+            res.send(reviews);
+        });
 
-    // profile
-    app.put('/myprofile/:email', async (req, res) => {
-        const email = req.params.email;
-        const info = req.body;
-        const filter = { email: email };
-        const options = { upsert: true };
-        const updateDoc = {
-            $set: info,
-        };
-        const result = await profileCollection.updateOne(filter, updateDoc, options);
-        res.send(result);
-    });
+        app.post('/addreview', async (req, res) => {
+            const newReview = req.body;
+            const result = await reviewsCollection.insertOne(newReview);
+            res.send(result);
+        });
 
-} finally {
-    // await client.close();
-}
+        // orders
+        app.post('/orders', async (req, res) => {
+            const order = req.body;
+            const result = await orderCollection.insertOne(order);
+            res.send(result);
+        });
+
+        app.get('/orders', verifyJWT, async (req, res) => {
+            const email = req.query.customerEmail;
+            const decodedEmail = req.decoded.email;
+            if (email === decodedEmail) {
+                const query = { customerEmail: email };
+                const result = await orderCollection.find(query).toArray();
+                res.send(result);
+            }
+            else {
+                return res.status(403).send({ message: 'forbidden access' });
+            }
+        });
+
+        app.delete('/orders/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: ObjectId(id) };
+            const result = await orderCollection.deleteOne(query);
+            res.send(result);
+        });
+
+        // profile
+        app.put('/myprofile/:email', async (req, res) => {
+            const email = req.params.email;
+            const info = req.body;
+            const filter = { email: email };
+            const options = { upsert: true };
+            const updateDoc = {
+                $set: info,
+            };
+            const result = await profileCollection.updateOne(filter, updateDoc, options);
+            res.send(result);
+        });
+
+    } finally {
+        // await client.close();
+    }
 }
 run().catch(console.dir);
 
