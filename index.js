@@ -5,6 +5,8 @@ const jwt = require('jsonwebtoken');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config();
 const port = process.env.PORT || 5000;
+var nodemailer = require('nodemailer');
+const mg = require('nodemailer-mailgun-transport');
 
 
 app.use(cors());
@@ -26,6 +28,46 @@ function verifyJWT(req, res, next) {
     });
 }
 
+
+const auth = {
+    auth: {
+        api_key: `${process.env.MAILGUN_API_KEY}`,
+        domain: `${process.env.MAILGUN_DOMAIL}`
+    }
+}
+
+const nodemailerMailgun = nodemailer.createTransport(mg(auth));
+
+function sendOrderEmail(order) {
+    const { customerEmail, customerName, tools, toolsId, pricePerPiece } = order;
+
+    var email = {
+        from: "support@phero.com",
+        to: customerEmail,
+        subject: `Your Appointment for ${tools} is on ${toolsId} at ${pricePerPiece} is Confirmed`,
+        text: `Your Appointment for ${tools} is on ${toolsId} at ${pricePerPiece} is Confirmed`,
+        html:
+            `
+            <div>
+                <p> Hello ${customerName}, </p>
+                <h3>Your Appointment for ${tools} is confirmed</h3>
+                <p>Looking forward to seeing you on ${toolsId} at ${pricePerPiece}.</p>
+                <h3>Our Address</h3>
+                <p>Andor Killa Bandorban</p>
+                <p>Bangladesh</p>
+                <a href="https://web.programming-hero.com/">unsubscribe</a>
+            </div>
+            `,
+    };
+
+    nodemailerMailgun.sendMail(email, (err, info) => {
+        if (err) {
+            console.log(err);
+        } else {
+            console.log(info);
+        }
+    });
+}
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.sqbew.mongodb.net/?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
@@ -151,6 +193,7 @@ async function run() {
         app.post('/orders', async (req, res) => {
             const order = req.body;
             const result = await orderCollection.insertOne(order);
+            sendOrderEmail(order)
             res.send(result);
         });
 
