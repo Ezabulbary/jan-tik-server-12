@@ -8,10 +8,8 @@ const port = process.env.PORT || 5000;
 var nodemailer = require('nodemailer');
 const mg = require('nodemailer-mailgun-transport');
 
-
 app.use(cors());
 app.use(express.json())
-
 
 function verifyJWT(req, res, next) {
     const authHeader = req.headers.authorization;
@@ -28,7 +26,6 @@ function verifyJWT(req, res, next) {
     });
 }
 
-
 const auth = {
     auth: {
         api_key: `${process.env.MAILGUN_API_KEY}`,
@@ -44,14 +41,14 @@ function sendOrderEmail(order) {
     var email = {
         from: "support@phero.com",
         to: customerEmail,
-        subject: `Your Appointment for ${tools} is on ${toolsId} at ${pricePerPiece} is Confirmed`,
-        text: `Your Appointment for ${tools} is on ${toolsId} at ${pricePerPiece} is Confirmed`,
+        subject: `Your Order for ${tools} is on ${toolsId} at ${pricePerPiece} is Confirmed`,
+        text: `Your Order for ${tools} is on ${toolsId} at ${pricePerPiece} is Confirmed`,
         html:
             `
             <div>
                 <p> Hello ${customerName}, </p>
-                <h3>Your Appointment for ${tools} is confirmed</h3>
-                <p>Looking forward to seeing you on ${toolsId} at ${pricePerPiece}.</p>
+                <h3>Your Order for ${tools} is confirmed</h3>
+                <p>Looking forward to Payment to you on ${toolsId} at ${pricePerPiece}.</p>
                 <h3>Our Address</h3>
                 <p>Andor Killa Bandorban</p>
                 <p>Bangladesh</p>
@@ -214,6 +211,13 @@ async function run() {
             const id = req.params.id;
             const query = { _id: ObjectId(id) };
             const result = await orderCollection.deleteOne(query);
+            res.send(result);
+        });
+
+        app.get('/orders/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: ObjectId(id) };
+            const result = await orderCollection.findOne(query);
             res.send(result);
         });
 
